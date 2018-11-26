@@ -11,6 +11,13 @@ Documentation
 go get github.com/hipcar/go-jurnal-client
 ```
 
+## Environment Variable
+|Environment  |Code  |
+|---|---|
+|Sandbox | jurnal.NewClient(jurnal.Sandbox) |
+|Production | jurnal.NewClient(jurnal.Production) |
+
+
 ## Init
 ```go
 package main
@@ -20,7 +27,7 @@ import (
 )
 
 func main() {
-  jurnalClient := jurnal.NewClient(nil)
+  jurnalClient := jurnal.NewClient(jurnal.Sandbox)
   jurnalClient.APIKey = "YOUR_JURNAL_API_KEY"
 }
 ```

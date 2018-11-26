@@ -1,20 +1,28 @@
 package jurnal
 
 import (
-	"errors"
-	"net/http"
-	"net/url"
-	"encoding/json"
-	"fmt"
-	"io"
 	"bytes"
 	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"net/http"
+	"net/url"
 )
 
 const (
-	libraryVersion = "0.1"
-	userAgent = "jurnal-api/" + libraryVersion
-	jurnalAPIURL = "http://sandbox-api.jurnal.id/core/api/v1/"
+	libraryVersion      = "0.1"
+	userAgent           = "jurnal-api/" + libraryVersion
+	jurnalAPIURL        = "http://api.jurnal.id/core/api/v1/"
+	jurnalSandBoxAPIURL = "http://sandbox-api.jurnal.id/core/api/v1/"
+)
+
+type JurnalEnvironment string
+
+const (
+	Sandbox    JurnalEnvironment = "sandbox"
+	Production JurnalEnvironment = "production"
 )
 
 var (
@@ -28,18 +36,18 @@ type Doer interface {
 
 type Client struct {
 	doer      Doer
-	BaseURL   *url.URL
+	baseURL   *url.URL
 	UserAgent string
 	EnableLog bool
 	APIKey    string
 
-	JournalEntry     *JournalEntry
+	JournalEntry *JournalEntry
 
 	httpClient *http.Client
 }
 
 type errorResponse struct {
-	Errors string `json:"errors"`
+	Errors            string   `json:"errors"`
 	ErrorFullMessages []string `json:"error_full_messages"`
 }
 
@@ -47,17 +55,19 @@ type DoerFunc func(req *http.Request) (resp *http.Response, err error)
 
 // NewClient created new jurnal api client with doer.
 // If doer is nil then http.DefaultClient used instead.
-func NewClient(doer Doer) *Client {
-	if doer == nil {
-		doer = http.DefaultClient
-	}
+func NewClient(env JurnalEnvironment) *Client {
+	var baseUrl string
 
-	baseUrl := jurnalAPIURL
+	if env == Sandbox {
+		baseUrl = jurnalSandBoxAPIURL
+	} else {
+		baseUrl = jurnalAPIURL
+	}
 
 	baseURL, _ := url.Parse(baseUrl)
 	client := &Client{
-		doer:      doer,
-		BaseURL:   baseURL,
+		doer:      http.DefaultClient,
+		baseURL:   baseURL,
 		UserAgent: userAgent,
 	}
 
@@ -74,7 +84,7 @@ func (c *Client) Request(method string, path string, data interface{}, v interfa
 	if err != nil {
 		return err
 	}
-	u := c.BaseURL.ResolveReference(rel)
+	u := c.baseURL.ResolveReference(rel)
 	var body io.Reader
 
 	if data != nil {
@@ -96,7 +106,7 @@ func (c *Client) Request(method string, path string, data interface{}, v interfa
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("apiKey", c.APIKey)
+	req.Header.Set("apikey", c.APIKey)
 
 	resp, err := c.doer.Do(req.WithContext(context.Background()))
 	if err != nil {
